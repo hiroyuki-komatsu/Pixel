@@ -1,17 +1,28 @@
 package com.github.hiroyuki_komatsu.pixel;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Toast;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends Activity {
+    PixelView mPixelView;
+    PixelData mPixelData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
+
+        mPixelData = new PixelData();
+        PixelView mPixelView = (PixelView)findViewById(R.id.PixelView);
+        mPixelView.setPixelData(mPixelData);
     }
 
     @Override
@@ -34,5 +45,14 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public void onSaveButton(View view) {
+        // TODO: do it in a thread.
+        if (FileOperator.saveData(this, "data.txt", "test data\n")) {
+            Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
+        }
     }
 }

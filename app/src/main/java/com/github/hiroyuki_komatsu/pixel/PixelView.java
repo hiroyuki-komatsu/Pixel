@@ -21,15 +21,9 @@ public class PixelView extends View {
     private Paint mPaintBackground;
 
     // Data for drawing
-    private int mDotSize = 0;  // = canvas_size / mPixelSize;
+    private int mDotSize = 1;  // To be updated with (canvas_size / mPixelSize).
 
-    // Pixel data
-    private int mPixelSize = 24;
-    private int[][] mPixel;
-
-    // Palette data
-    private int mPaletteSize = 5;
-    private int[] mPalette;
+    private PixelData mPixelData = null;
 
     public PixelView(Context context) {
         this(context, null);
@@ -45,27 +39,22 @@ public class PixelView extends View {
         mPaintBackground = new Paint();
         mPaintBackground.setColor(Color.rgb(0xC8, 0xE6, 0xC9));
 
-        // Initialize color palette.
-        mPalette = new int[mPaletteSize];
-        mPalette[0] = Color.WHITE;
-        mPalette[1] = Color.BLACK;
-        mPalette[2] = Color.RED;
-        mPalette[3] = Color.GREEN;
-        mPalette[4] = Color.BLUE;
+        mPixelData = new PixelData();
+    }
 
-        mPixel = new int[mPixelSize][mPixelSize];
+    public void setPixelData(PixelData pixelData) {
+        mPixelData = pixelData;
     }
 
     @Override
     public boolean onTouchEvent(@NonNull final MotionEvent event) {
+        if (mPixelData == null) {
+            return true;
+        }
         int x = (int)event.getX() / mDotSize;
         int y = (int)event.getY() / mDotSize;
 
-        if (x >= mPixelSize || y >= mPixelSize) {
-            return true;
-        }
-
-        mPixel[x][y] = (mPixel[x][y] + 1) % mPaletteSize;
+        mPixelData.setPixel(x, y, mPixelData.getPixel(x, y) + 1);
 
         invalidate();
         return true;
@@ -78,20 +67,19 @@ public class PixelView extends View {
         // Reset canvas
         canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), mPaintBackground);
 
+        if (mPixelData == null) {
+            return;
+        }
+
         // Draw Pixel
         int x = 0;
         int y = 0;
-        for (int i = 0; i < mPixelSize; ++i) {
-            for (int j = 0; j < mPixelSize; ++j) {
+        for (int i = 0; i < mPixelData.pixelSize(); ++i) {
+            for (int j = 0; j < mPixelData.pixelSize(); ++j) {
                 x = mDotSize * i;
                 y = mDotSize * j;
 
-                // Get color from palette.
-                int paletteIndex = mPixel[i][j];
-                if (paletteIndex >= mPaletteSize) {
-                    paletteIndex = 0;
-                }
-                mPaint.setColor(mPalette[paletteIndex]);
+                mPaint.setColor(mPixelData.getColor(i, j));
                 canvas.drawRect(x, y, x + mDotSize - 1, y + mDotSize - 1, mPaint);
             }
         }
@@ -107,7 +95,9 @@ public class PixelView extends View {
         } else {
             height = width;
         }
-        mDotSize = width / mPixelSize;
+        if (mPixelData != null) {
+            mDotSize = width / mPixelData.pixelSize();
+        }
         setMeasuredDimension(width, height);
     }
 }
