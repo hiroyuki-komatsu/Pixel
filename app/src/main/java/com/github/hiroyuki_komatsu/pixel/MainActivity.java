@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -35,7 +36,7 @@ public class MainActivity extends Activity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
+        Log.e("MainActivity", "onActivityResult");
         mGoogleDriveFragment.onActivityResult(requestCode, resultCode, data);
     }
 
@@ -63,6 +64,7 @@ public class MainActivity extends Activity {
 
     public void onSaveButton(View view) {
         mGoogleDriveFragment.saveNewFile("data.txt", "test data\n");
+        mGoogleDriveFragment.createFileActivity();
 
         /*
         // TODO: do it in a thread.

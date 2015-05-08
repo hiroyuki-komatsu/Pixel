@@ -18,6 +18,7 @@ import com.google.android.gms.drive.DriveContents;
 import com.google.android.gms.drive.DriveFolder;
 import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.MetadataChangeSet;
+import com.google.android.gms.drive.OpenFileActivityBuilder;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -58,6 +59,12 @@ public class GoogleDriveFragment extends Fragment implements
      */
     protected static final int REQUEST_CODE_RESOLUTION = 1;
 
+    /**
+     * Request code for creator.
+     */
+    protected static final int REQUEST_CODE_CREATE_FILE_ACTIVITY = 2;
+
+
     private GoogleApiClient mGoogleApiClient;
 
     @Override
@@ -81,8 +88,19 @@ public class GoogleDriveFragment extends Fragment implements
     public void onActivityResult(int requestCode, int resultCode,
                                     Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        Log.e(TAG, "onActivityResult");
         if (requestCode == REQUEST_CODE_RESOLUTION && resultCode == Activity.RESULT_OK) {
             mGoogleApiClient.connect();
+        }
+
+        // For createFileActivity
+        if (requestCode == REQUEST_CODE_CREATE_FILE_ACTIVITY) {
+            Log.e(TAG, "REQUEST_CODE_CREATE_FILE_ACTIVITY");
+            if (resultCode == Activity.RESULT_OK) {
+                DriveId driveId = data.getParcelableExtra(
+                        OpenFileActivityBuilder.EXTRA_RESPONSE_DRIVE_ID);
+                showMessage("File created with Id: " + driveId);
+            }
         }
     }
 
@@ -95,6 +113,12 @@ public class GoogleDriveFragment extends Fragment implements
     public void saveNewFile(String title, String data) {
         SaveNewFile saveNewFile = new SaveNewFile(title, data);
         mGoogleApiClient.registerConnectionCallbacks(saveNewFile);
+        mGoogleApiClient.connect();
+    }
+
+    public void createFileActivity() {
+        CreateFileActivity createFileActivity = new CreateFileActivity();
+        mGoogleApiClient.registerConnectionCallbacks(createFileActivity);
         mGoogleApiClient.connect();
     }
 
@@ -140,6 +164,14 @@ public class GoogleDriveFragment extends Fragment implements
         @Override
         public void onConnected(Bundle connectionHint) {
             Log.i(TAG, "GoogleApiClient connected");
+
+            if (mGoogleApiClient.isConnectionCallbacksRegistered(thisCallbacks())) {
+                Log.i(TAG, "Unregistered: " + thisCallbacks());
+                mGoogleApiClient.unregisterConnectionCallbacks(thisCallbacks());
+            } else {
+                Log.e(TAG, "Unregister was failed: " + thisCallbacks());
+            }
+
             action();
         }
 
@@ -155,6 +187,7 @@ public class GoogleDriveFragment extends Fragment implements
             return this;
         }
 
+        // TODO: This callback is used by SaveNewFile only.
         final protected ResultCallback<DriveFolder.DriveFileResult> mResultCallback =
                 new ResultCallback<DriveFolder.DriveFileResult>() {
                     @Override
@@ -163,16 +196,10 @@ public class GoogleDriveFragment extends Fragment implements
                             showMessage("Error while trying to create the file");
                             return;
                         }
-                        showMessage("Created a file in App Folder: "
+                        showMessage("Created a file in Root Folder: "
                                 + result.getDriveFile().getDriveId());
-                        Log.i(TAG, "Created a file in App Folder: "
+                        Log.i(TAG, "Created a file in Root Folder: "
                                 + result.getDriveFile().getDriveId());
-                        if (mGoogleApiClient.isConnectionCallbacksRegistered(thisCallbacks())) {
-                            Log.i(TAG, "Unregistered: " + thisCallbacks());
-                            mGoogleApiClient.unregisterConnectionCallbacks(thisCallbacks());
-                        } else {
-                            Log.e(TAG, "Unregister was failed: " + thisCallbacks());
-                        }
                     }
                 };
     }
@@ -222,6 +249,55 @@ public class GoogleDriveFragment extends Fragment implements
                         Drive.DriveApi.getRootFolder(getGoogleApiClient())
                                 .createFile(getGoogleApiClient(), changeSet, contents)
                                 .setResultCallback(mResultCallback);
+                    }
+                };
+    }
+
+    private class CreateFileActivity extends Action {
+        public CreateFileActivity() {}
+
+        @Override
+        public void action() {
+            super.action();
+            Drive.DriveApi.newDriveContents(getGoogleApiClient())
+                    .setResultCallback(mDriveContentsCallback);
+        }
+
+        final private ResultCallback<DriveApi.DriveContentsResult> mDriveContentsCallback =
+                new ResultCallback<DriveApi.DriveContentsResult>() {
+                    @Override
+                    public void onResult(DriveApi.DriveContentsResult result) {
+                        if (!result.getStatus().isSuccess()) {
+                            showMessage("Error while trying to create new file contents");
+                            return;
+                        }
+
+                        MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                                .setTitle("TEST TITLE")
+                                .setMimeType("text/plain")
+                                .build();
+                        DriveContents contents = result.getDriveContents();
+                        OutputStream output = contents.getOutputStream();
+                        Writer writer = new OutputStreamWriter(output);
+                        try {
+                            writer.write("TEST DATA");
+                            writer.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        // TODO: Same so far with SaveNewFile.
+
+                        IntentSender intentSender = Drive.DriveApi
+                                .newCreateFileActivityBuilder()
+                                .setInitialMetadata(changeSet)
+                                .setInitialDriveContents(contents)
+                                .build(getGoogleApiClient());
+                        try {
+                            getActivity().startIntentSenderForResult(
+                                    intentSender, REQUEST_CODE_CREATE_FILE_ACTIVITY, null, 0, 0, 0);
+                        } catch (IntentSender.SendIntentException e) {
+                            Log.w(TAG, "Failed sending intent.", e);
+                        }
                     }
                 };
     }
