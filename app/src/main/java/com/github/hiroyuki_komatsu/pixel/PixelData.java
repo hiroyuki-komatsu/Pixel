@@ -7,7 +7,7 @@ import android.graphics.Color;
  */
 public class PixelData {
     // Pixel data
-    private int mPixelSize = 24;
+    private int mPixelSize = 16;
     private int[][] mPixel;
 
     // Palette data
@@ -35,6 +35,10 @@ public class PixelData {
     }
 
     public int getPixel(int x, int y) {
+        if (x >= mPixelSize || y >= mPixelSize) {
+            return 0;
+        }
+
         int paletteId = mPixel[x][y];
         if (paletteId >= mPaletteSize) {
             return 0;
@@ -47,7 +51,7 @@ public class PixelData {
             return false;
         }
         if (paletteId >= mPaletteSize) {
-            return false;
+            paletteId = 0;
         }
         mPixel[x][y] = paletteId;
         return true;

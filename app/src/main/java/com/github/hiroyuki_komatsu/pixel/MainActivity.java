@@ -1,18 +1,20 @@
 package com.github.hiroyuki_komatsu.pixel;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.support.v7.app.ActionBarActivity;
+import android.app.FragmentTransaction;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 
 public class MainActivity extends Activity {
-    PixelView mPixelView;
-    PixelData mPixelData;
+    private PixelView mPixelView;
+    private PixelData mPixelData;
+
+    private GoogleDriveFragment mGoogleDriveFragment;
+    private final String GOOGLE_DRIVE_TAG = "GoogleDrive";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,8 +23,20 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         mPixelData = new PixelData();
-        PixelView mPixelView = (PixelView)findViewById(R.id.PixelView);
+        mPixelView = (PixelView)findViewById(R.id.PixelView);
         mPixelView.setPixelData(mPixelData);
+
+        mGoogleDriveFragment = new GoogleDriveFragment();
+
+        FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
+        fragmentTransaction.add(mGoogleDriveFragment, GOOGLE_DRIVE_TAG).commit();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        mGoogleDriveFragment.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -48,11 +62,18 @@ public class MainActivity extends Activity {
     }
 
     public void onSaveButton(View view) {
+        mGoogleDriveFragment.saveNewFile("data.txt", "test data\n");
+
+        /*
         // TODO: do it in a thread.
-        if (FileOperator.saveData(this, "data.txt", "test data\n")) {
+        boolean result =
+                FileOperator.saveData(this, "data.txt", "test data\n");
+
+        if (result) {
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
         }
+        */
     }
 }
