@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 
 public class MainActivity extends Activity {
@@ -66,7 +67,15 @@ public class MainActivity extends Activity {
         //mGoogleDriveFragment.saveNewFile("data.txt", "test data\n");
         //mGoogleDriveFragment.createFileActivity();
         String[] mimeType = {};
-        mGoogleDriveFragment.openFile(mimeType);
+//        mGoogleDriveFragment.openFile(mimeType);
+        mGoogleDriveFragment.getFile(mimeType, new GoogleDriveFragment.DriveContentsCallback() {
+            @Override
+            public void driveContentsCallback(String driveId, String contents) {
+                Toast.makeText(MainActivity.this,
+                        "Contents: " + contents,
+                        Toast.LENGTH_LONG).show();
+            }
+        });
 
         /*
         // TODO: do it in a thread.

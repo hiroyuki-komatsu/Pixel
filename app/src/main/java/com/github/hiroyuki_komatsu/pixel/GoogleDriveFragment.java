@@ -117,13 +117,22 @@ public class GoogleDriveFragment extends Fragment implements
             if (resultCode == Activity.RESULT_OK) {
                 DriveId driveId = data.getParcelableExtra(
                         OpenFileActivityBuilder.EXTRA_RESPONSE_DRIVE_ID);
-                showMessage("Opened DriveId: " + driveId);
 
-                // TODO: Create a separate function.
-                //showMessage("Contents: " + getContents(driveId));
-                getFile(driveId.encodeToString());
+                // TODO: Need to handle multiple calls in the same time.
+                if (mOpenFileCallback != null) {
+                    mOpenFileCallback.driveIdCallback(driveId.encodeToString());
+                    mOpenFileCallback = null;
+                }
             }
         }
+    }
+
+    public interface DriveIdCallback {
+        public void driveIdCallback(String driveId);
+    }
+
+    public interface DriveContentsCallback {
+        public void driveContentsCallback(String driveId, String contents);
     }
 
     public void clearDefaultAccountAndReconnect() {
@@ -144,17 +153,32 @@ public class GoogleDriveFragment extends Fragment implements
         mGoogleApiClient.connect();
     }
 
-    public void openFile(String[] mimeTypes) {
+    DriveIdCallback mOpenFileCallback = null;
+
+    public boolean openFile(String[] mimeTypes, DriveIdCallback callback) {
+        if (mOpenFileCallback != null) {
+            return false;
+        }
+        mOpenFileCallback = callback;
         OpenFileActivity openFileActivity = new OpenFileActivity(mimeTypes);
         mGoogleApiClient.registerConnectionCallbacks(openFileActivity);
         mGoogleApiClient.connect();
+        return true;
     }
 
-    public void getFile(String driveId) {
-        GetFile fetchDriveId = new GetFile(driveId);
+    public boolean getFile(String[] mimeTypes, final DriveContentsCallback callback) {
+        return openFile(mimeTypes, new DriveIdCallback() {
+                    @Override
+                    public void driveIdCallback(String driveId) {
+                        getFile(driveId, callback);
+                    }
+                });
+    }
+
+    public void getFile(String driveId, DriveContentsCallback callback) {
+        GetFile fetchDriveId = new GetFile(driveId, callback);
         mGoogleApiClient.registerConnectionCallbacks(fetchDriveId);
         mGoogleApiClient.connect();
-
     }
 
     /**
@@ -368,10 +392,11 @@ public class GoogleDriveFragment extends Fragment implements
      */
     private class GetFile extends Action {
         private String mDriveId;
+        private DriveContentsCallback mCallback;
 
-        public GetFile(String driveId) {
-            Log.e(TAG, "driveId: " + driveId);
+        public GetFile(String driveId, DriveContentsCallback callback) {
             mDriveId = driveId;
+            mCallback = callback;
         }
 
         @Override
@@ -392,7 +417,7 @@ public class GoogleDriveFragment extends Fragment implements
                         }
 
                         String contents = getContents(driveContentsResult.getDriveContents());
-                        showMessage("Contents: " + contents);
+                        mCallback.driveContentsCallback(mDriveId, contents);
                         Log.i(TAG, "Contents: " + contents);
                     }
                 };
