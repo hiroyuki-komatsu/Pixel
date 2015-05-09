@@ -63,8 +63,10 @@ public class MainActivity extends Activity {
     }
 
     public void onSaveButton(View view) {
-        mGoogleDriveFragment.saveNewFile("data.txt", "test data\n");
-        mGoogleDriveFragment.createFileActivity();
+        //mGoogleDriveFragment.saveNewFile("data.txt", "test data\n");
+        //mGoogleDriveFragment.createFileActivity();
+        String[] mimeType = {};
+        mGoogleDriveFragment.openFile(mimeType);
 
         /*
         // TODO: do it in a thread.

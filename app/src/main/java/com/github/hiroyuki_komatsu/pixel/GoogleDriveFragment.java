@@ -2,6 +2,7 @@ package com.github.hiroyuki_komatsu.pixel;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
@@ -15,12 +16,15 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.drive.Drive;
 import com.google.android.gms.drive.DriveApi;
 import com.google.android.gms.drive.DriveContents;
+import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveFolder;
 import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.MetadataChangeSet;
 import com.google.android.gms.drive.OpenFileActivityBuilder;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -60,10 +64,14 @@ public class GoogleDriveFragment extends Fragment implements
     protected static final int REQUEST_CODE_RESOLUTION = 1;
 
     /**
-     * Request code for creator.
+     * Request code for CreateFileActivity.
      */
     protected static final int REQUEST_CODE_CREATE_FILE_ACTIVITY = 2;
 
+    /**
+     * Request code for OpenFileActivity.
+     */
+    protected static final int REQUEST_CODE_OPEN_FILE_ACTIVITY = 3;
 
     private GoogleApiClient mGoogleApiClient;
 
@@ -102,6 +110,20 @@ public class GoogleDriveFragment extends Fragment implements
                 showMessage("File created with Id: " + driveId);
             }
         }
+
+        // For openFileActivity
+        if (requestCode == REQUEST_CODE_OPEN_FILE_ACTIVITY) {
+            Log.e(TAG, "REQUEST_CODE_OPEN_FILE_ACTIVITY");
+            if (resultCode == Activity.RESULT_OK) {
+                DriveId driveId = data.getParcelableExtra(
+                        OpenFileActivityBuilder.EXTRA_RESPONSE_DRIVE_ID);
+                showMessage("Opened DriveId: " + driveId);
+
+                // TODO: Create a separate function.
+                //showMessage("Contents: " + getContents(driveId));
+                getFile(driveId.encodeToString());
+            }
+        }
     }
 
     public void clearDefaultAccountAndReconnect() {
@@ -120,6 +142,19 @@ public class GoogleDriveFragment extends Fragment implements
         CreateFileActivity createFileActivity = new CreateFileActivity();
         mGoogleApiClient.registerConnectionCallbacks(createFileActivity);
         mGoogleApiClient.connect();
+    }
+
+    public void openFile(String[] mimeTypes) {
+        OpenFileActivity openFileActivity = new OpenFileActivity(mimeTypes);
+        mGoogleApiClient.registerConnectionCallbacks(openFileActivity);
+        mGoogleApiClient.connect();
+    }
+
+    public void getFile(String driveId) {
+        GetFile fetchDriveId = new GetFile(driveId);
+        mGoogleApiClient.registerConnectionCallbacks(fetchDriveId);
+        mGoogleApiClient.connect();
+
     }
 
     /**
@@ -205,7 +240,7 @@ public class GoogleDriveFragment extends Fragment implements
     }
 
     /**
-     * SaveNewFile crates a new file in the root folder of Google Drive.
+     * SaveNewFile creates a new file in the root folder of Google Drive.
      */
     private class SaveNewFile extends Action {
         private String mTitle;
@@ -300,5 +335,85 @@ public class GoogleDriveFragment extends Fragment implements
                         }
                     }
                 };
+    }
+
+    /**
+     * OpenFile shows a dialog to select a file in Google Drive.
+     */
+    private class OpenFileActivity extends Action {
+        private String[] mMimeTypes;
+
+        public OpenFileActivity(String[] mimeTypes) {
+            mMimeTypes = mimeTypes;
+        }
+
+        @Override
+        public void action() {
+            super.action();
+            IntentSender intentSender = Drive.DriveApi
+                    .newOpenFileActivityBuilder()
+                    .setMimeType(mMimeTypes)
+                    .build(getGoogleApiClient());
+            try {
+                getActivity().startIntentSenderForResult(
+                        intentSender, REQUEST_CODE_OPEN_FILE_ACTIVITY, null, 0, 0, 0);
+            } catch (IntentSender.SendIntentException e) {
+                Log.w(TAG, "Failed sending intent.", e);
+            }
+        }
+    }
+
+    /**
+     * GetFile returns the contents of the DriveId.
+     */
+    private class GetFile extends Action {
+        private String mDriveId;
+
+        public GetFile(String driveId) {
+            Log.e(TAG, "driveId: " + driveId);
+            mDriveId = driveId;
+        }
+
+        @Override
+        public void action() {
+            super.action();
+            Drive.DriveApi.getFile(getGoogleApiClient(), DriveId.decodeFromString(mDriveId))
+                    .open(getGoogleApiClient(), DriveFile.MODE_READ_ONLY, null)
+                    .setResultCallback(mResultIdCallback);
+        }
+
+        final private ResultCallback<DriveApi.DriveContentsResult> mResultIdCallback =
+                new ResultCallback<DriveApi.DriveContentsResult>() {
+                    @Override
+                    public void onResult(DriveApi.DriveContentsResult driveContentsResult) {
+                        if (!driveContentsResult.getStatus().isSuccess()) {
+                            showMessage("Error while opening the file.");
+                            return;
+                        }
+
+                        String contents = getContents(driveContentsResult.getDriveContents());
+                        showMessage("Contents: " + contents);
+                        Log.i(TAG, "Contents: " + contents);
+                    }
+                };
+
+        private String getContents(DriveContents driveContents) {
+            String contents = null;
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(driveContents.getInputStream()));
+            StringBuilder builder = new StringBuilder();
+            String line;
+            try {
+                while ((line = reader.readLine()) != null) {
+                    builder.append(line);
+                }
+                contents = builder.toString();
+            } catch (IOException e) {
+                Log.e(TAG, "IOException while reading from the stream", e);
+            }
+
+            driveContents.discard(getGoogleApiClient());
+            return contents;
+        }
     }
 }
