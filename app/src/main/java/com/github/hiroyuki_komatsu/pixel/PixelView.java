@@ -25,6 +25,11 @@ public class PixelView extends View {
 
     private PixelData mPixelData = null;
 
+    private int cursorX = 10;
+    private int cursorY = 10;
+    private int previousX = 0;
+    private int previousY = 0;
+
     public PixelView(Context context) {
         this(context, null);
     }
@@ -51,13 +56,30 @@ public class PixelView extends View {
         if (mPixelData == null) {
             return true;
         }
-        int x = (int)event.getX() / mDotSize;
-        int y = (int)event.getY() / mDotSize;
 
-        mPixelData.setPixel(x, y, mPixelData.getPixel(x, y) + 1);
+        if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            cursorX += (int)event.getX() - previousX;
+            cursorY += (int)event.getY() - previousY;
+
+            int maxSize =  mDotSize * mPixelData.pixelSize();
+            if (cursorX < 0) { cursorX = 0; }
+            if (cursorX > maxSize) { cursorX = maxSize; }
+            if (cursorY < 0) { cursorY = 0; }
+            if (cursorY > maxSize) { cursorY = maxSize; }
+        }
+
+        previousX = (int)event.getX();
+        previousY = (int)event.getY();
 
         invalidate();
         return true;
+    }
+
+    public void setPixel() {
+        int x = cursorX / mDotSize;
+        int y = cursorY / mDotSize;
+        mPixelData.setPixel(x, y, mPixelData.getPixel(x, y) + 1);
+        invalidate();
     }
 
     @Override
@@ -83,6 +105,11 @@ public class PixelView extends View {
                 canvas.drawRect(x, y, x + mDotSize - 1, y + mDotSize - 1, mPaint);
             }
         }
+
+        // Draw Cursor
+        mPaint.setColor(Color.BLACK);
+        canvas.drawLine(cursorX - 5, cursorY, cursorX + 5, cursorY, mPaint);
+        canvas.drawLine(cursorX, cursorY - 5, cursorX, cursorY + 5, mPaint);
     }
 
     @Override

@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Pixel</string>
 
+    <string name="set">Set</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 </resources>

@@ -63,7 +63,22 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
+    public void onSetButton(View view) {
+        mPixelView.setPixel();
+    }
+
     public void onSaveButton(View view) {
+         // TODO: do it in a thread.
+        boolean result = FileOperator.savePng(this, "data.png", mPixelData);
+
+        if (result) {
+            Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void onSaveButtonWithDrive(View view) {
         //mGoogleDriveFragment.saveNewFile("data.txt", "test data\n");
         //mGoogleDriveFragment.createFileActivity();
         String[] mimeType = {};
@@ -77,16 +92,5 @@ public class MainActivity extends Activity {
             }
         });
 
-        /*
-        // TODO: do it in a thread.
-        boolean result =
-                FileOperator.saveData(this, "data.txt", "test data\n");
-
-        if (result) {
-            Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
-        }
-        */
     }
 }

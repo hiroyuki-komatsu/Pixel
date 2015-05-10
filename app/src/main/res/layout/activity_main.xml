@@ -15,6 +15,17 @@
         />
 
     <Button
+        android:id="@+id/setButton"
+        android:onClick="onSetButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/set"
+        android:layout_below="@+id/PixelView"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <Button
         android:id="@+id/saveButton"
         android:onClick="onSaveButton"
         android:layout_width="wrap_content"
