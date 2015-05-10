@@ -35,4 +35,15 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
         android:text="@string/save" />
+
+    <Button
+        android:id="@+id/saveDriveButton"
+        android:onClick="onSaveButtonWithDrive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/saveDrive"
+        android:layout_alignParentBottom="true"
+        android:layout_toLeftOf="@+id/saveButton"
+        android:layout_toStartOf="@+id/saveButton" />
 </RelativeLayout>

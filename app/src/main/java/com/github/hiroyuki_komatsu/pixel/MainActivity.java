@@ -10,8 +10,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 
 public class MainActivity extends Activity {
+    private static final String TAG = "MainActivity";
+
     private PixelView mPixelView;
     private PixelData mPixelData;
 
@@ -69,7 +75,7 @@ public class MainActivity extends Activity {
 
     public void onSaveButton(View view) {
          // TODO: do it in a thread.
-        boolean result = FileOperator.savePng(this, "data.png", mPixelData);
+        boolean result = FileOperator.savePng(this, "datasd.png", mPixelData);
 
         if (result) {
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
@@ -79,10 +85,18 @@ public class MainActivity extends Activity {
     }
 
     public void onSaveButtonWithDrive(View view) {
-        //mGoogleDriveFragment.saveNewFile("data.txt", "test data\n");
-        //mGoogleDriveFragment.createFileActivity();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PixelDataConverter.compressToPng(mPixelData, baos);
+        try {
+            baos.close();
+        } catch (IOException e) {
+            Log.e(TAG, "Exception while starting resolution activity", e);
+        }
+        mGoogleDriveFragment.createFileActivity("data.png", baos.toByteArray(), "image/png");
+    }
+
+    public void openFromDrive() {
         String[] mimeType = {};
-//        mGoogleDriveFragment.openFile(mimeType);
         mGoogleDriveFragment.getFile(mimeType, new GoogleDriveFragment.DriveContentsCallback() {
             @Override
             public void driveContentsCallback(String driveId, String contents) {
@@ -91,6 +105,5 @@ public class MainActivity extends Activity {
                         Toast.LENGTH_LONG).show();
             }
         });
-
     }
 }

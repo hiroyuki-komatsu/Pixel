@@ -141,14 +141,14 @@ public class GoogleDriveFragment extends Fragment implements
         }
     }
 
-    public void saveNewFile(String title, String data) {
-        SaveNewFile saveNewFile = new SaveNewFile(title, data);
+    public void saveNewFile(String title, String data, String mimeType) {
+        SaveNewFile saveNewFile = new SaveNewFile(title, data, mimeType);
         mGoogleApiClient.registerConnectionCallbacks(saveNewFile);
         mGoogleApiClient.connect();
     }
 
-    public void createFileActivity() {
-        CreateFileActivity createFileActivity = new CreateFileActivity();
+    public void createFileActivity(String title, byte[] data, String mimeType) {
+        CreateFileActivity createFileActivity = new CreateFileActivity(title, data, mimeType);
         mGoogleApiClient.registerConnectionCallbacks(createFileActivity);
         mGoogleApiClient.connect();
     }
@@ -269,10 +269,12 @@ public class GoogleDriveFragment extends Fragment implements
     private class SaveNewFile extends Action {
         private String mTitle;
         private String mData;
+        private String mMimeType;
 
-        public SaveNewFile(String title, String data) {
+        public SaveNewFile(String title, String data, String mimeType) {
             mTitle = title;
             mData = data;
+            mMimeType = mimeType;
         }
 
         @Override
@@ -293,7 +295,7 @@ public class GoogleDriveFragment extends Fragment implements
 
                         MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
                                 .setTitle(mTitle)
-                                .setMimeType("text/plain")
+                                .setMimeType(mMimeType)
                                 .build();
                         DriveContents contents = result.getDriveContents();
                         OutputStream output = contents.getOutputStream();
@@ -313,7 +315,14 @@ public class GoogleDriveFragment extends Fragment implements
     }
 
     private class CreateFileActivity extends Action {
-        public CreateFileActivity() {}
+        String mTitle;
+        byte[] mData;
+        String mMimeType;
+        public CreateFileActivity(String title, byte[] data, String mimeType) {
+            mTitle = title;
+            mData = data;
+            mMimeType = mimeType;
+        }
 
         @Override
         public void action() {
@@ -332,15 +341,14 @@ public class GoogleDriveFragment extends Fragment implements
                         }
 
                         MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
-                                .setTitle("TEST TITLE")
-                                .setMimeType("text/plain")
+                                .setTitle(mTitle)
+                                .setMimeType(mMimeType)
                                 .build();
                         DriveContents contents = result.getDriveContents();
                         OutputStream output = contents.getOutputStream();
-                        Writer writer = new OutputStreamWriter(output);
                         try {
-                            writer.write("TEST DATA");
-                            writer.close();
+                            output.write(mData);
+                            output.close();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
